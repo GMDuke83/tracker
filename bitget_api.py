@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import requests
 import os
+import base64
 
 class BitgetAPI:
     def __init__(self):
@@ -15,23 +16,28 @@ class BitgetAPI:
         return str(int(time.time() * 1000))
 
     def _sign(self, method, path, timestamp, body=""):
-        pre_hash = timestamp + method + path + body
-        return hmac.new(self.api_secret.encode(), pre_hash.encode(), hashlib.sha256).hexdigest()
+        pre_hash = timestamp + method.upper() + path + body
+        h = hmac.new(self.api_secret.encode(), pre_hash.encode(), hashlib.sha256)
+        return base64.b64encode(h.digest()).decode()
 
     def get_positions(self):
         method = "GET"
         path = "/api/mix/v1/position/allPosition?productType=USDT-FUTURES"
         timestamp = self._get_timestamp()
         sign = self._sign(method, path, timestamp)
+
         headers = {
             "ACCESS-KEY": self.api_key,
             "ACCESS-SIGN": sign,
             "ACCESS-TIMESTAMP": timestamp,
-            "ACCESS-PASSPHRASE": self.api_passphrase
+            "ACCESS-PASSPHRASE": self.api_passphrase,
+            "Content-Type": "application/json"
         }
+
         url = self.base_url + path
         response = requests.get(url, headers=headers)
-        if response.status_code == 200:
+
+        try:
             return response.json()
-        else:
-            return {"error": response.text}
+        except Exception:
+            return {"error": "invalid json", "raw": response.text}
