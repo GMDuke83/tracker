@@ -18,11 +18,13 @@ def get_positions():
     bitget = BitgetAPI()
     response = bitget.get_positions()
 
-    # Optional: Fehlerbehandlung
-    if "data" not in response:
-        return {"error": response.get("msg", "API error"), "raw": response}
+    # Fehlerbehandlung
+    if not isinstance(response, dict) or "data" not in response or not response["data"]:
+        return {
+            "error": response.get("msg", "API error") if isinstance(response, dict) else "No response",
+            "raw": response
+        }
 
-    # Umwandlung ins Frontend-kompatible Format
     result = []
     for item in response["data"]:
         result.append({
