@@ -22,9 +22,10 @@ class BitgetAPI:
 
     def get_positions(self):
         method = "GET"
-        path = "/api/mix/v1/position/allPosition?productType=USDT-FUTURES"
+        path = "/api/mix/v1/position/allPosition"
+        query = "productType=USDT-FUTURES"
         timestamp = self._get_timestamp()
-        sign = self._sign(method, path, timestamp)
+        sign = self._sign(method, path + "?" + query, timestamp)
 
         headers = {
             "ACCESS-KEY": self.api_key,
@@ -34,7 +35,7 @@ class BitgetAPI:
             "Content-Type": "application/json"
         }
 
-        url = self.base_url + path
+        url = self.base_url + path + "?" + query
         response = requests.get(url, headers=headers)
 
         try:
