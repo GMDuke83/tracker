@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from bitget_api import BitgetAPI
 from datetime import datetime
 
 app = FastAPI()
@@ -14,18 +15,28 @@ app.add_middleware(
 
 @app.get("/api/positions")
 def get_positions():
-    return [
-        {
-            "symbol": "BTC/USDT",
+    bitget = BitgetAPI()
+    response = bitget.get_positions()
+
+    # Optional: Fehlerbehandlung
+    if "data" not in response:
+        return {"error": response.get("msg", "API error"), "raw": response}
+
+    # Umwandlung ins Frontend-kompatible Format
+    result = []
+    for item in response["data"]:
+        result.append({
+            "symbol": item.get("symbol", "N/A"),
             "exchange": "Bitget",
-            "side": "Long",
-            "leverage": 5,
-            "marginType": "Isolated",
-            "entryPrice": 103366.9,
-            "marketPrice": 103656.3,
-            "liqPrice": 83067.3,
-            "pnlUSD": 0.23,
-            "pnlPercent": 1.4,
-            "openTime": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC"),
-        }
-    ]
+            "side": item.get("holdSide", "N/A").capitalize(),
+            "leverage": float(item.get("leverage", 0)),
+            "marginType": item.get("marginMode", "Isolated"),
+            "entryPrice": float(item.get("averageOpenPrice", 0)),
+            "marketPrice": float(item.get("marketPrice", 0)),
+            "liqPrice": float(item.get("liquidationPrice", 0)),
+            "pnlUSD": float(item.get("unrealizedPL", 0)),
+            "pnlPercent": float(item.get("unrealizedPLRatio", 0)) * 100,
+            "openTime": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
+        })
+
+    return result
